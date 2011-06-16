@@ -1,0 +1,9 @@
+# wimax-profiler
+
+A tool for measuring WiMax network status. Including service coverage,
+bandwidth, latency, signal strength, and channel quality.
+
+Required packages: luaposix, Lua Lanes
+Optional packages: lua-wimax, lua-gps, lua-oping, and LuaSocket
+
+To get run the --send option you will need a version of luaposix with usleep.
