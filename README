@@ -3,7 +3,45 @@
 A tool for measuring WiMax network status. Including service coverage,
 bandwidth, latency, signal strength, and channel quality.
 
-Required packages: luaposix, Lua Lanes
+# Dependency information
+
+Required packages: lua5.1, liblua5.1-dev, luaposix, Lua Lanes
 Optional packages: lua-wimax, lua-gps, lua-oping, and LuaSocket
 
-To get run the --send option you will need a version of luaposix with usleep.
+To get run the "--send" option you will need a version of luaposix with usleep.
+
+patched luaposix - http://github.com/jdegges/luaposix.git
+lualanes - http://github.com/LuaLanes/lanes.git
+
+lua-wimax - http://github.com/jdegges/lua-wimax.git
+lua-gps - http://github.com/jdegges/lua-gps.git
+lua-oping - http://github.com/jdegges/lua-oping.git
+
+After compiling each module listed above with the include make.sh script copy
+the generated shared object (.so) into the wimax-profiler directory.
+
+The server portion of the software, running with the "--send" option, can be
+run on a server without having to install the wimax, gps, and oping modules.
+Since they are linked to at runtime depending on command line arguments, no
+linking errors will occur if running with only "--send".
+
+# Output data format
+
+Output is written to stdout as well as the file specified with the "--output"
+argument. The data written to stdout is formatted in a more human readable way
+with units and spaces, etc.
+
+The data written to the output file is in a simple comma separated value (CSV)
+format with a one line header that describes each column.
+
+For making pretty maps you can use your favorite text processor (cut, awk,
+etc.) to masage the data into a format that GPS Visualizer likes
+(http://www.gpsvisualizer.com/map_input).
+
+# Why liboml2 was not used
+
+Linking against liboml2 caused several problems. Namely one oml2 structure was
+compiled to be 16 bytes in the liboml2 packages but when linking to the library
+the build system wanted that structure to be 12 bytes. If/when this issue is
+more fully documented and resolved it may be preferrable to log data with OML
+rather than simple CSV outputs.
