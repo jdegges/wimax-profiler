@@ -63,7 +63,7 @@ if nil ~= opt.send then
   local bitrate = tonumber (opt.bitrate)
   local pktsz = tonumber (opt.pktsz)
 
-  if opt.bitrate < 0 or opt.pktsz < 20 or 8192 < opt.pktsz then
+  if bitrate < 0 or pktsz < 20 or 8192 < pktsz then
     print ("Bitrate must be positive and packet size must be within bounds")
     usage ()
     return 1
