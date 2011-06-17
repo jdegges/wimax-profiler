@@ -22,6 +22,7 @@ function usage ()
   print ("  --output=file           file to write measurements into")
 end
 
+-- parse a string like "host:port" into "host" and "port"
 function split_hostaddr (str)
   local i = string.find (str, ":")
   return string.sub (str, 1, i - 1), string.sub (str, i + 1, str:len ())
@@ -40,15 +41,21 @@ else
   opt.output = io.stdout
 end
 
+-- create thread communication channel 'linda'
 local linda = lanes.linda ()
+
+-- output logfile header
 opt.output:write ('#')
 
 -- parse arguments for GPS measurements
 if nil ~= opt.gps then
   local host, port = split_hostaddr (opt.gps)
 
-  -- startup the gps thread
+  -- write log header
   opt.output:write (',time,lat,lon,alt')
+
+  -- query gps position every 4 seconds, if disconnected/error happens then
+  -- wait 20 seconds before reconnecting.
   gps_lane = lanes.gen ("*", sample_gps) (linda, host, port, 4, 20)
 end
 
@@ -93,6 +100,10 @@ end
 -- startup the wimax link monitoring thread
 if nil ~= opt.wimax then
   opt.output:write (',freq,rssi,cinr,txpwr')
+
+  -- the script setup-wimax.sh will be invoked to reconnect to the BS if it
+  -- gets disconnected. reconnect timeout is 20 seconds. when connected, will
+  -- sample every 4 seconds.
   wimax_lane = lanes.gen ("*", sample_wimax) (linda, "./setup-wimax.sh", 4, 20)
   if true ~= linda:receive ("wimax.ready") then
     print ("wimax is not ready... big problem")
@@ -105,6 +116,8 @@ end
 -- startup the ping thread
 if nil ~= opt.ping then
   opt.output:write (',seqnum,dropped,latency')
+
+  -- send/recv pings every 4 seconds.
   ping_lane = lanes.gen ("*", sample_ping) (linda, opt.ping, 4)
 end
 
@@ -117,19 +130,6 @@ posix.sleep (5)
 local counter = 0
 while true do
   local output_line = ""
-
-  if nil ~= opt.wimax then
-    local freq = linda:get ("wimax.freq")
-    local rssi = linda:get ("wimax.rssi")
-    local cinr = linda:get ("wimax.cinr")
-    local txpwr = linda:get("wimax.txpwr")
-    print (counter .. " | "
-      .. "Freq: " .. freq .. "KHz" .. " | "
-      .. "RSSI: " .. rssi .. "dBm" .. " | "
-      .. "CINR: " .. cinr .. "dB" .. " | "
-      .. "TXPWR:" .. txpwr .. "dBm")
-    output_line = string.format ("%s,%d,%d,%d,%d", output_line, freq, rssi, cinr, txpwr)
-  end
 
   if nil ~= opt.gps then
     local time = linda:get ("gps.time")
@@ -155,6 +155,19 @@ while true do
     output_line = string.format ("%s,%f,%f,%d", output_line, bandwidth, pdropped, pkts)
   end
 
+  if nil ~= opt.wimax then
+    local freq = linda:get ("wimax.freq")
+    local rssi = linda:get ("wimax.rssi")
+    local cinr = linda:get ("wimax.cinr")
+    local txpwr = linda:get("wimax.txpwr")
+    print (counter .. " | "
+      .. "Freq: " .. freq .. "KHz" .. " | "
+      .. "RSSI: " .. rssi .. "dBm" .. " | "
+      .. "CINR: " .. cinr .. "dB" .. " | "
+      .. "TXPWR:" .. txpwr .. "dBm")
+    output_line = string.format ("%s,%d,%d,%d,%d", output_line, freq, rssi, cinr, txpwr)
+  end
+
   if nil ~= opt.ping then
     local seqnum = linda:get ("ping.seqnum")
     local dropped = linda:get ("ping.dropped")
@@ -173,5 +186,7 @@ while true do
 
   counter = counter + 1
 
+  -- wait for 8 seconds before sampling again (this is 1/2 the frequency that
+  -- the threads are sampling at)
   posix.sleep (8)
 end
