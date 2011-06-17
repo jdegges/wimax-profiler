@@ -125,6 +125,8 @@ local counter = 0
 while true do
   local output_line = ""
 
+  -- if gps was enabled on the command line then sample location, output to
+  -- stdout, and output to the output file
   if nil ~= opt.gps then
     local time = linda:get ("gps.time")
     local lat = linda:get ("gps.lat")
