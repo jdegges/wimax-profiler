@@ -105,12 +105,6 @@ if nil ~= opt.wimax then
   -- gets disconnected. reconnect timeout is 20 seconds. when connected, will
   -- sample every 4 seconds.
   wimax_lane = lanes.gen ("*", sample_wimax) (linda, "./setup-wimax.sh", 4, 20)
-  if true ~= linda:receive ("wimax.ready") then
-    print ("wimax is not ready... big problem")
-    return 1
-  else
-    print ("wimax is now ready.")
-  end
 end
 
 -- startup the ping thread
